@@ -36,12 +36,16 @@ interface ApiError {
   resolution: string;
 }
 
+// this is a COMPONENT
 const DictionaryApp = () => {
+  // States (Variables)
   const [word, setWord] = useState<string>("");
   const [definition, setDefinition] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
 
+  // API Call Helper Function
+  // Helper funciton, in javascript
   const fetchDefinition = async () => {
     if (!word.trim()) {
       setError("Please enter a word.");
@@ -52,9 +56,10 @@ const DictionaryApp = () => {
     setDefinition(null);
     setError("");
 
+    // call to external api
     try {
       const response = await fetch(
-        `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`
+        `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`,
       );
       const data: ApiResponse | ApiError = await response.json();
 
@@ -87,10 +92,12 @@ const DictionaryApp = () => {
     </View>
   );
 
+  // Rendered Layout (What you actually see)
   return (
+    // equivalent to using HTML, eg. <h1></h1> is similar to <Text></Text>
     <SafeAreaView style={styles.container}>
       <View style={styles.innerContainer}>
-        <Text style={styles.title}>Dictionary</Text>
+        <Text style={styles.title}>Dictionary App</Text>
 
         <TextInput
           style={styles.input}
@@ -102,6 +109,7 @@ const DictionaryApp = () => {
           autoCorrect={false}
         />
 
+        {/* this is the submit button */}
         <TouchableOpacity
           style={styles.button}
           onPress={fetchDefinition}
@@ -133,10 +141,12 @@ const DictionaryApp = () => {
   );
 };
 
+// THIS IS EQUIVALENT TO USING A CSS File
+// Stylesheet: customize look of the layout
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F5F7",
+    backgroundColor: "#fff",
   },
   innerContainer: {
     paddingHorizontal: 20,
@@ -161,7 +171,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   button: {
-    backgroundColor: "#007AFF",
+    backgroundColor: "rgb(0, 60, 255)",
     padding: 15,
     borderRadius: 10,
     alignItems: "center",
