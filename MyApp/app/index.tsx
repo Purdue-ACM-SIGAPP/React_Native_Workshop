@@ -1,96 +1,56 @@
 import React, { useState } from "react";
 import {
-  StyleSheet,
+  ActivityIndicator,
+  FlatList,
+  SafeAreaView,
   Text,
-  View,
   TextInput,
   TouchableOpacity,
-  FlatList,
-  ActivityIndicator,
-  SafeAreaView,
-  ListRenderItemInfo,
+  View,
 } from "react-native";
 
-interface Definition {
-  definition: string;
-  example?: string;
-}
-
-interface Meaning {
-  partOfSpeech: string;
-  definitions: Definition[];
-}
-
-interface DictionaryEntry {
-  word: string;
-  meanings: Meaning[];
-}
-
-// The API returns an array of dictionary entries
-type ApiResponse = DictionaryEntry[];
-
-// Type for the error response from the API
-interface ApiError {
-  title: string;
-  message: string;
-  resolution: string;
-}
+import DefinitionCard from "@/components/DefinitionCard";
+import { styles } from "@/styles";
+import { colors } from "@/theme";
+import { ApiResponse, Entry } from "@/types";
 
 // this is a COMPONENT
 const DictionaryApp = () => {
-  // States (Variables)
-  const [word, setWord] = useState<string>("");
-  const [definition, setDefinition] = useState<ApiResponse | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string>("");
+  // States (Variables that make the screen re-draw when they change)
+  const [word, setWord] = useState("");
+  const [entries, setEntries] = useState<Entry[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  // API Call Helper Function
-  // Helper funciton, in javascript
-  const fetchDefinition = async () => {
-    if (!word.trim()) {
-      setError("Please enter a word.");
-      return;
-    }
-
+  // Runs when you press Search
+  const searchWord = async () => {
+    // Start fresh: show the spinner, clear the old results
     setLoading(true);
-    setDefinition(null);
+    setEntries([]);
     setError("");
 
-    // call to external api
     try {
+      // 1. Ask the API for the word
       const response = await fetch(
-        `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`,
+        `https://freedictionaryapi.com/api/v1/entries/en/${word}`,
       );
-      const data: ApiResponse | ApiError = await response.json();
 
-      if (response.ok) {
-        setDefinition(data as ApiResponse);
+      // 2. Turn the reply into a JavaScript object
+      const data: ApiResponse = await response.json();
+
+      // 3. Show the definitions, or say we found none
+      if (data.entries.length === 0) {
+        setError(`No definition found for "${word}".`);
       } else {
-        setError((data as ApiError).title || "Could not find a definition.");
+        setEntries(data.entries);
       }
     } catch {
-      setError("An error occurred. Please check your network connection.");
-    } finally {
-      setLoading(false);
+      setError("Something went wrong. Please check your connection.");
     }
-  };
 
-  // --- Render Function for the FlatList ---
-  const renderDefinition = ({ item }: ListRenderItemInfo<Meaning>) => (
-    <View style={styles.definitionContainer}>
-      <Text style={styles.partOfSpeech}>{item.partOfSpeech}</Text>
-      {item.definitions.map((def, index) => (
-        <View key={index} style={styles.definitionBlock}>
-          <Text style={styles.definitionText}>
-            {index + 1}. {def.definition}
-          </Text>
-          {def.example && (
-            <Text style={styles.exampleText}>Example: &quot;{def.example}&quot;</Text>
-          )}
-        </View>
-      ))}
-    </View>
-  );
+    // Hide the spinner, whatever happened
+    setLoading(false);
+  };
 
   // Rendered Layout (What you actually see)
   return (
@@ -104,124 +64,30 @@ const DictionaryApp = () => {
           placeholder="Enter a word..."
           value={word}
           onChangeText={setWord}
-          onSubmitEditing={fetchDefinition} // Allows searching with the return key
+          onSubmitEditing={searchWord} // Search with the return key
           autoCapitalize="none"
           autoCorrect={false}
         />
 
         {/* this is the submit button */}
-        <TouchableOpacity
-          style={styles.button}
-          onPress={fetchDefinition}
-          disabled={loading}
-        >
+        <TouchableOpacity style={styles.button} onPress={searchWord}>
           <Text style={styles.buttonText}>Search</Text>
         </TouchableOpacity>
 
-        {loading && (
-          <ActivityIndicator
-            size="large"
-            color="#007AFF"
-            style={styles.loader}
-          />
-        )}
+        {/* Each line below only shows up when its condition is true */}
+        {loading && <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />}
 
-        {error && <Text style={styles.errorText}>{error}</Text>}
+        {error !== "" && <Text style={styles.errorText}>{error}</Text>}
 
-        {definition && (
-          <FlatList
-            data={definition[0]?.meanings} // The API returns an array, we use the first result
-            renderItem={renderDefinition}
-            keyExtractor={(item, index) => `${item.partOfSpeech}-${index}`}
-            style={styles.resultsContainer}
-          />
-        )}
+        <FlatList
+          data={entries}
+          renderItem={({ item }) => <DefinitionCard entry={item} />}
+          keyExtractor={(item, index) => `${item.partOfSpeech}-${index}`}
+          style={styles.resultsContainer}
+        />
       </View>
     </SafeAreaView>
   );
 };
-
-// THIS IS EQUIVALENT TO USING A CSS File
-// Stylesheet: customize look of the layout
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-  innerContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    flex: 1,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 20,
-    color: "#333",
-  },
-  input: {
-    height: 50,
-    borderColor: "#E0E0E0",
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    backgroundColor: "#FFFFFF",
-    fontSize: 16,
-    marginBottom: 20,
-  },
-  button: {
-    backgroundColor: "rgb(0, 60, 255)",
-    padding: 15,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  buttonText: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  loader: {
-    marginTop: 20,
-  },
-  resultsContainer: {
-    marginTop: 20,
-  },
-  definitionContainer: {
-    backgroundColor: "#FFFFFF",
-    padding: 20,
-    borderRadius: 10,
-    marginBottom: 15,
-    borderColor: "#E0E0E0",
-    borderWidth: 1,
-  },
-  partOfSpeech: {
-    fontSize: 20,
-    fontWeight: "bold",
-    fontStyle: "italic",
-    marginBottom: 10,
-    color: "#333",
-  },
-  definitionBlock: {
-    marginBottom: 10,
-  },
-  definitionText: {
-    fontSize: 16,
-    color: "#555",
-    lineHeight: 24,
-  },
-  exampleText: {
-    fontSize: 14,
-    fontStyle: "italic",
-    color: "#777",
-    marginTop: 5,
-  },
-  errorText: {
-    color: "#D32F2F",
-    textAlign: "center",
-    marginTop: 20,
-    fontSize: 16,
-  },
-});
 
 export default DictionaryApp;
