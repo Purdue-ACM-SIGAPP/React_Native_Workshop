@@ -68,7 +68,7 @@ const DictionaryApp = () => {
       } else {
         setError((data as ApiError).title || "Could not find a definition.");
       }
-    } catch (err) {
+    } catch {
       setError("An error occurred. Please check your network connection.");
     } finally {
       setLoading(false);
@@ -85,7 +85,7 @@ const DictionaryApp = () => {
             {index + 1}. {def.definition}
           </Text>
           {def.example && (
-            <Text style={styles.exampleText}>Example: "{def.example}"</Text>
+            <Text style={styles.exampleText}>Example: &quot;{def.example}&quot;</Text>
           )}
         </View>
       ))}
